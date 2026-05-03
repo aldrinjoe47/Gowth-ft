@@ -1,0 +1,322 @@
+import React, { useState, useMemo } from 'react';
+import { 
+  Wallet, 
+  TrendingUp, 
+  TrendingDown, 
+  Plus, 
+  Trash2, 
+  PieChart, 
+  ArrowUpRight, 
+  ArrowDownLeft,
+  Filter,
+  CreditCard,
+  Utensils,
+  ShoppingBag,
+  Home,
+  Car,
+  Briefcase
+} from 'lucide-react';
+
+const App = () => {
+  // 1. Core State: The "Database" of our application with Rupee values
+  const [transactions, setTransactions] = useState([
+    { id: 1, text: 'Monthly Salary', amount: 75000, type: 'income', category: 'Salary', date: '2024-03-01' },
+    { id: 2, text: 'Grocery Shopping', amount: 4500, type: 'expense', category: 'Food', date: '2024-03-05' },
+    { id: 3, text: 'Rent Payment', amount: 18000, type: 'expense', category: 'Housing', date: '2024-03-01' },
+    { id: 4, text: 'Freelance Project', amount: 12500, type: 'income', category: 'Salary', date: '2024-03-10' },
+  ]);
+
+  const [formData, setFormData] = useState({ text: '', amount: '', type: 'expense', category: 'Food' });
+  const [filter, setFilter] = useState('All');
+
+  // 2. Calculated Logic: Using en-IN locale for Indian Currency Formatting
+  const formatCurrency = (val) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      maximumFractionDigits: 0
+    }).format(val);
+  };
+
+  const totals = useMemo(() => {
+    return transactions.reduce((acc, item) => {
+      if (item.type === 'income') {
+        acc.income += item.amount;
+        acc.balance += item.amount;
+      } else {
+        acc.expense += item.amount;
+        acc.balance -= item.amount;
+      }
+      return acc;
+    }, { balance: 0, income: 0, expense: 0 });
+  }, [transactions]);
+
+  const categoryData = useMemo(() => {
+    const expenses = transactions.filter(t => t.type === 'expense');
+    const categories = [...new Set(expenses.map(t => t.category))];
+    return categories.map(cat => ({
+      name: cat,
+      total: expenses.filter(t => t.category === cat).reduce((sum, t) => sum + t.amount, 0)
+    }));
+  }, [transactions]);
+
+  // 3. Actions
+  const addTransaction = (e) => {
+    e.preventDefault();
+    if (!formData.text || !formData.amount) return;
+
+    const newTransaction = {
+      id: Math.floor(Math.random() * 1000000),
+      text: formData.text,
+      amount: parseFloat(formData.amount),
+      type: formData.type,
+      category: formData.category,
+      date: new Date().toISOString().split('T')[0]
+    };
+
+    setTransactions([newTransaction, ...transactions]);
+    setFormData({ text: '', amount: '', type: 'expense', category: 'Food' });
+  };
+
+  const deleteTransaction = (id) => {
+    setTransactions(transactions.filter(t => t.id !== id));
+  };
+
+  const filteredTransactions = transactions.filter(t => 
+    filter === 'All' ? true : t.type === filter.toLowerCase()
+  );
+
+  const getCategoryIcon = (cat) => {
+    switch(cat) {
+      case 'Food': return <Utensils size={16} />;
+      case 'Housing': return <Home size={16} />;
+      case 'Transport': return <Car size={16} />;
+      case 'Shopping': return <ShoppingBag size={16} />;
+      case 'Salary': return <Briefcase size={16} />;
+      default: return <CreditCard size={16} />;
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50 text-slate-900 p-4 md:p-8 font-sans">
+      <div className="max-w-6xl mx-auto">
+        
+        {/* Header */}
+        <div className="flex justify-between items-end mb-10">
+          <div>
+            <h1 className="text-3xl font-black tracking-tight flex items-center gap-2">
+              <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white">
+                <Wallet size={24} />
+              </div>
+              SpendWise
+            </h1>
+            <p className="text-slate-500 font-medium">Finance Tracker (INR)</p>
+          </div>
+          <div className="text-right hidden md:block">
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Current Session</p>
+            <p className="text-sm font-bold">{new Date().toLocaleDateString('en-IN', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+          </div>
+        </div>
+
+        {/* Top Cards: Summary Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="bg-indigo-600 p-8 rounded-[2rem] text-white shadow-xl shadow-indigo-100 relative overflow-hidden">
+            <div className="relative z-10">
+              <p className="text-indigo-100 text-sm font-bold uppercase tracking-widest mb-2">Total Balance</p>
+              <h2 className="text-4xl font-black mb-1">{formatCurrency(totals.balance)}</h2>
+            </div>
+            <div className="absolute -right-4 -bottom-4 opacity-10 rotate-12">
+              <Wallet size={120} />
+            </div>
+          </div>
+
+          <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm flex items-center gap-6">
+            <div className="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center">
+              <TrendingUp size={28} />
+            </div>
+            <div>
+              <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1">Income</p>
+              <h3 className="text-2xl font-bold text-emerald-600">+{formatCurrency(totals.income)}</h3>
+            </div>
+          </div>
+
+          <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm flex items-center gap-6">
+            <div className="w-14 h-14 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center">
+              <TrendingDown size={28} />
+            </div>
+            <div>
+              <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1">Expenses</p>
+              <h3 className="text-2xl font-bold text-rose-600">-{formatCurrency(totals.expense)}</h3>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-1 space-y-8">
+            {/* Add Transaction Form */}
+            <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm">
+              <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
+                <Plus size={20} className="text-indigo-600" /> Add Transaction
+              </h3>
+              <form onSubmit={addTransaction} className="space-y-4">
+                <div>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block ml-1">Description</label>
+                  <input 
+                    type="text"
+                    value={formData.text}
+                    onChange={(e) => setFormData({...formData, text: e.target.value})}
+                    placeholder="e.g. Swiggy Order"
+                    className="w-full bg-slate-50 border-none rounded-xl p-4 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block ml-1">Amount (₹)</label>
+                    <input 
+                      type="number"
+                      value={formData.amount}
+                      onChange={(e) => setFormData({...formData, amount: e.target.value})}
+                      placeholder="0"
+                      className="w-full bg-slate-50 border-none rounded-xl p-4 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block ml-1">Type</label>
+                    <select 
+                      value={formData.type}
+                      onChange={(e) => setFormData({...formData, type: e.target.value})}
+                      className="w-full bg-slate-50 border-none rounded-xl p-4 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                    >
+                      <option value="expense">Expense</option>
+                      <option value="income">Income</option>
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block ml-1">Category</label>
+                  <select 
+                    value={formData.category}
+                    onChange={(e) => setFormData({...formData, category: e.target.value})}
+                    className="w-full bg-slate-50 border-none rounded-xl p-4 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                  >
+                    <option value="Food">Food & Dining</option>
+                    <option value="Housing">Housing/Rent</option>
+                    <option value="Transport">Transport</option>
+                    <option value="Shopping">Shopping</option>
+                    <option value="Salary">Salary/Bonus</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+                <button className="w-full py-4 bg-slate-900 text-white rounded-xl font-bold hover:bg-indigo-600 transition-all shadow-lg shadow-slate-100">
+                  Save Transaction
+                </button>
+              </form>
+            </div>
+
+            {/* Visual Breakdown */}
+            <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm">
+              <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
+                <PieChart size={20} className="text-indigo-600" /> Spending Categories
+              </h3>
+              <div className="space-y-4">
+                {categoryData.length > 0 ? categoryData.map((cat, i) => (
+                  <div key={i}>
+                    <div className="flex justify-between text-xs font-bold mb-2">
+                      <span className="text-slate-600">{cat.name}</span>
+                      <span className="text-slate-900">{formatCurrency(cat.total)}</span>
+                    </div>
+                    <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-indigo-500 rounded-full" 
+                        style={{ width: `${Math.min(100, (cat.total / totals.expense) * 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                )) : (
+                  <p className="text-slate-400 text-sm italic py-4 text-center">No expense recorded</p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column: Transaction List */}
+          <div className="lg:col-span-2">
+            <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm min-h-[600px]">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                <h3 className="text-xl font-black">Transaction History</h3>
+                <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-xl">
+                  {['All', 'Income', 'Expense'].map((btn) => (
+                    <button
+                      key={btn}
+                      onClick={() => setFilter(btn)}
+                      className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                        filter === btn ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-400 hover:text-slate-600'
+                      }`}
+                    >
+                      {btn}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                {filteredTransactions.length > 0 ? filteredTransactions.map((t) => (
+                  <div 
+                    key={t.id} 
+                    className="group flex items-center justify-between p-4 bg-slate-50/50 hover:bg-white hover:shadow-md hover:shadow-slate-100 border border-transparent hover:border-slate-100 rounded-2xl transition-all"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                        t.type === 'income' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'
+                      }`}>
+                        {getCategoryIcon(t.category)}
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-slate-800">{t.text}</h4>
+                        <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+                          <span>{t.date}</span>
+                          <span>•</span>
+                          <span>{t.category}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-6">
+                      <div className="text-right">
+                        <p className={`font-bold text-lg ${t.type === 'income' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                          {t.type === 'income' ? '+' : '-'}{formatCurrency(t.amount)}
+                        </p>
+                        <p className="text-[10px] font-black uppercase text-slate-300 tracking-tighter">Verified</p>
+                      </div>
+                      <button 
+                        onClick={() => deleteTransaction(t.id)}
+                        className="opacity-0 group-hover:opacity-100 p-2 text-slate-300 hover:text-rose-600 transition-all"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
+                  </div>
+                )) : (
+                  <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+                    <Filter size={40} className="mb-4 opacity-20" />
+                    <p className="font-medium italic text-center">No transactions to display.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer info for project presentation */}
+        <footer className="mt-12 pt-8 border-t border-slate-200 flex flex-col md:flex-row justify-between items-center text-slate-400 text-xs gap-4">
+          <div className="flex items-center gap-4">
+            <span className="flex items-center gap-1"><ArrowUpRight size={14} className="text-emerald-500" /> Income auditing</span>
+            <span className="flex items-center gap-1"><ArrowDownLeft size={14} className="text-rose-500" /> Expense tracking</span>
+          </div>
+          <p className="font-bold uppercase tracking-widest">&copy; 2024 SpendWise — Developed by S. Gowtham Raj</p>
+        </footer>
+      </div>
+    </div>
+  );
+};
+
+export default App;
