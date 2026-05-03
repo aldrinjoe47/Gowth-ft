@@ -1,322 +1,353 @@
-import React, { useState, useMemo } from 'react';
-import { 
-  Wallet, 
-  TrendingUp, 
-  TrendingDown, 
-  Plus, 
-  Trash2, 
-  PieChart, 
-  ArrowUpRight, 
-  ArrowDownLeft,
-  Filter,
-  CreditCard,
-  Utensils,
-  ShoppingBag,
-  Home,
-  Car,
-  Briefcase
-} from 'lucide-react';
-
-const App = () => {
-  // 1. Core State: The "Database" of our application with Rupee values
-  const [transactions, setTransactions] = useState([
-    { id: 1, text: 'Monthly Salary', amount: 75000, type: 'income', category: 'Salary', date: '2024-03-01' },
-    { id: 2, text: 'Grocery Shopping', amount: 4500, type: 'expense', category: 'Food', date: '2024-03-05' },
-    { id: 3, text: 'Rent Payment', amount: 18000, type: 'expense', category: 'Housing', date: '2024-03-01' },
-    { id: 4, text: 'Freelance Project', amount: 12500, type: 'income', category: 'Salary', date: '2024-03-10' },
-  ]);
-
-  const [formData, setFormData] = useState({ text: '', amount: '', type: 'expense', category: 'Food' });
-  const [filter, setFilter] = useState('All');
-
-  // 2. Calculated Logic: Using en-IN locale for Indian Currency Formatting
-  const formatCurrency = (val) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      maximumFractionDigits: 0
-    }).format(val);
-  };
-
-  const totals = useMemo(() => {
-    return transactions.reduce((acc, item) => {
-      if (item.type === 'income') {
-        acc.income += item.amount;
-        acc.balance += item.amount;
-      } else {
-        acc.expense += item.amount;
-        acc.balance -= item.amount;
-      }
-      return acc;
-    }, { balance: 0, income: 0, expense: 0 });
-  }, [transactions]);
-
-  const categoryData = useMemo(() => {
-    const expenses = transactions.filter(t => t.type === 'expense');
-    const categories = [...new Set(expenses.map(t => t.category))];
-    return categories.map(cat => ({
-      name: cat,
-      total: expenses.filter(t => t.category === cat).reduce((sum, t) => sum + t.amount, 0)
-    }));
-  }, [transactions]);
-
-  // 3. Actions
-  const addTransaction = (e) => {
-    e.preventDefault();
-    if (!formData.text || !formData.amount) return;
-
-    const newTransaction = {
-      id: Math.floor(Math.random() * 1000000),
-      text: formData.text,
-      amount: parseFloat(formData.amount),
-      type: formData.type,
-      category: formData.category,
-      date: new Date().toISOString().split('T')[0]
-    };
-
-    setTransactions([newTransaction, ...transactions]);
-    setFormData({ text: '', amount: '', type: 'expense', category: 'Food' });
-  };
-
-  const deleteTransaction = (id) => {
-    setTransactions(transactions.filter(t => t.id !== id));
-  };
-
-  const filteredTransactions = transactions.filter(t => 
-    filter === 'All' ? true : t.type === filter.toLowerCase()
-  );
-
-  const getCategoryIcon = (cat) => {
-    switch(cat) {
-      case 'Food': return <Utensils size={16} />;
-      case 'Housing': return <Home size={16} />;
-      case 'Transport': return <Car size={16} />;
-      case 'Shopping': return <ShoppingBag size={16} />;
-      case 'Salary': return <Briefcase size={16} />;
-      default: return <CreditCard size={16} />;
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 p-4 md:p-8 font-sans">
-      <div className="max-w-6xl mx-auto">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SpendWise — Personal Finance Tracker</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
         
-        {/* Header */}
-        <div className="flex justify-between items-end mb-10">
-          <div>
-            <h1 className="text-3xl font-black tracking-tight flex items-center gap-2">
-              <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white">
-                <Wallet size={24} />
-              </div>
-              SpendWise
-            </h1>
-            <p className="text-slate-500 font-medium">Finance Tracker (INR)</p>
-          </div>
-          <div className="text-right hidden md:block">
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Current Session</p>
-            <p className="text-sm font-bold">{new Date().toLocaleDateString('en-IN', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
-          </div>
-        </div>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #f8fafc;
+        }
 
-        {/* Top Cards: Summary Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-indigo-600 p-8 rounded-[2rem] text-white shadow-xl shadow-indigo-100 relative overflow-hidden">
-            <div className="relative z-10">
-              <p className="text-indigo-100 text-sm font-bold uppercase tracking-widest mb-2">Total Balance</p>
-              <h2 className="text-4xl font-black mb-1">{formatCurrency(totals.balance)}</h2>
-            </div>
-            <div className="absolute -right-4 -bottom-4 opacity-10 rotate-12">
-              <Wallet size={120} />
-            </div>
-          </div>
+        .custom-noise {
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+            opacity: 0.03;
+            pointer-events: none;
+        }
 
-          <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm flex items-center gap-6">
-            <div className="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center">
-              <TrendingUp size={28} />
-            </div>
+        .glass-nav {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+    </style>
+</head>
+<body class="text-slate-900">
+    <div class="fixed inset-0 custom-noise z-50"></div>
+
+    <div class="max-w-6xl mx-auto p-4 md:p-8 relative z-10">
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4">
             <div>
-              <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1">Income</p>
-              <h3 className="text-2xl font-bold text-emerald-600">+{formatCurrency(totals.income)}</h3>
-            </div>
-          </div>
-
-          <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm flex items-center gap-6">
-            <div className="w-14 h-14 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center">
-              <TrendingDown size={28} />
-            </div>
-            <div>
-              <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1">Expenses</p>
-              <h3 className="text-2xl font-bold text-rose-600">-{formatCurrency(totals.expense)}</h3>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-1 space-y-8">
-            {/* Add Transaction Form */}
-            <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm">
-              <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
-                <Plus size={20} className="text-indigo-600" /> Add Transaction
-              </h3>
-              <form onSubmit={addTransaction} className="space-y-4">
-                <div>
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block ml-1">Description</label>
-                  <input 
-                    type="text"
-                    value={formData.text}
-                    onChange={(e) => setFormData({...formData, text: e.target.value})}
-                    placeholder="e.g. Swiggy Order"
-                    className="w-full bg-slate-50 border-none rounded-xl p-4 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                  />
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-indigo-200">
+                        <i data-lucide="wallet"></i>
+                    </div>
+                    <h1 class="text-3xl font-extrabold tracking-tight">SpendWise</h1>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block ml-1">Amount (₹)</label>
-                    <input 
-                      type="number"
-                      value={formData.amount}
-                      onChange={(e) => setFormData({...formData, amount: e.target.value})}
-                      placeholder="0"
-                      className="w-full bg-slate-50 border-none rounded-xl p-4 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block ml-1">Type</label>
-                    <select 
-                      value={formData.type}
-                      onChange={(e) => setFormData({...formData, type: e.target.value})}
-                      className="w-full bg-slate-50 border-none rounded-xl p-4 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                    >
-                      <option value="expense">Expense</option>
-                      <option value="income">Income</option>
-                    </select>
-                  </div>
+                <p class="text-slate-500 font-medium ml-1">Personal Financial Dashboard (INR)</p>
+            </div>
+            <div class="text-left md:text-right">
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-1">Session Active</p>
+                <p id="current-date" class="text-sm font-bold text-slate-700"></p>
+            </div>
+        </header>
+
+        <!-- Summary Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-indigo-600 p-8 rounded-[2.5rem] text-white shadow-2xl shadow-indigo-100 relative overflow-hidden group">
+                <div class="relative z-10">
+                    <p class="text-indigo-100 text-xs font-bold uppercase tracking-widest mb-2">Total Balance</p>
+                    <h2 id="total-balance" class="text-4xl font-black mb-1">₹0</h2>
+                </div>
+                <div class="absolute -right-4 -bottom-4 opacity-10 rotate-12 group-hover:scale-110 transition-transform duration-500">
+                    <i data-lucide="wallet" size="120"></i>
+                </div>
+            </div>
+
+            <div class="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-6 group hover:border-emerald-200 transition-colors">
+                <div class="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center group-hover:bg-emerald-600 group-hover:text-white transition-all">
+                    <i data-lucide="trending-up"></i>
                 </div>
                 <div>
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block ml-1">Category</label>
-                  <select 
-                    value={formData.category}
-                    onChange={(e) => setFormData({...formData, category: e.target.value})}
-                    className="w-full bg-slate-50 border-none rounded-xl p-4 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                  >
-                    <option value="Food">Food & Dining</option>
-                    <option value="Housing">Housing/Rent</option>
-                    <option value="Transport">Transport</option>
-                    <option value="Shopping">Shopping</option>
-                    <option value="Salary">Salary/Bonus</option>
-                    <option value="Other">Other</option>
-                  </select>
+                    <p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1">Total Income</p>
+                    <h3 id="total-income" class="text-2xl font-bold text-emerald-600">₹0</h3>
                 </div>
-                <button className="w-full py-4 bg-slate-900 text-white rounded-xl font-bold hover:bg-indigo-600 transition-all shadow-lg shadow-slate-100">
-                  Save Transaction
-                </button>
-              </form>
             </div>
 
-            {/* Visual Breakdown */}
-            <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm">
-              <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
-                <PieChart size={20} className="text-indigo-600" /> Spending Categories
-              </h3>
-              <div className="space-y-4">
-                {categoryData.length > 0 ? categoryData.map((cat, i) => (
-                  <div key={i}>
-                    <div className="flex justify-between text-xs font-bold mb-2">
-                      <span className="text-slate-600">{cat.name}</span>
-                      <span className="text-slate-900">{formatCurrency(cat.total)}</span>
-                    </div>
-                    <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-indigo-500 rounded-full" 
-                        style={{ width: `${Math.min(100, (cat.total / totals.expense) * 100)}%` }}
-                      />
-                    </div>
-                  </div>
-                )) : (
-                  <p className="text-slate-400 text-sm italic py-4 text-center">No expense recorded</p>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Right Column: Transaction List */}
-          <div className="lg:col-span-2">
-            <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm min-h-[600px]">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-                <h3 className="text-xl font-black">Transaction History</h3>
-                <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-xl">
-                  {['All', 'Income', 'Expense'].map((btn) => (
-                    <button
-                      key={btn}
-                      onClick={() => setFilter(btn)}
-                      className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${
-                        filter === btn ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-400 hover:text-slate-600'
-                      }`}
-                    >
-                      {btn}
-                    </button>
-                  ))}
+            <div class="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-6 group hover:border-rose-200 transition-colors">
+                <div class="w-14 h-14 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center group-hover:bg-rose-600 group-hover:text-white transition-all">
+                    <i data-lucide="trending-down"></i>
                 </div>
-              </div>
+                <div>
+                    <p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1">Total Expenses</p>
+                    <h3 id="total-expense" class="text-2xl font-bold text-rose-600">₹0</h3>
+                </div>
+            </div>
+        </div>
 
-              <div className="space-y-3">
-                {filteredTransactions.length > 0 ? filteredTransactions.map((t) => (
-                  <div 
-                    key={t.id} 
-                    className="group flex items-center justify-between p-4 bg-slate-50/50 hover:bg-white hover:shadow-md hover:shadow-slate-100 border border-transparent hover:border-slate-100 rounded-2xl transition-all"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                        t.type === 'income' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'
-                      }`}>
-                        {getCategoryIcon(t.category)}
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-slate-800">{t.text}</h4>
-                        <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
-                          <span>{t.date}</span>
-                          <span>•</span>
-                          <span>{t.category}</span>
+        <div class="grid lg:grid-cols-3 gap-8">
+            <!-- Left: Controls -->
+            <div class="lg:col-span-1 space-y-8">
+                <!-- Add Form -->
+                <div class="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
+                    <h3 class="text-lg font-bold mb-6 flex items-center gap-2">
+                        <i data-lucide="plus" class="text-indigo-600" size="20"></i> Add Transaction
+                    </h3>
+                    <form id="transaction-form" class="space-y-5">
+                        <div>
+                            <label class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block ml-1">Description</label>
+                            <input type="text" id="desc" required placeholder="e.g. Broadband Bill" 
+                                class="w-full bg-slate-50 border-2 border-transparent rounded-2xl p-4 text-sm focus:border-indigo-500 focus:bg-white outline-none transition-all">
                         </div>
-                      </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block ml-1">Amount (₹)</label>
+                                <input type="number" id="amount" required placeholder="0" 
+                                    class="w-full bg-slate-50 border-2 border-transparent rounded-2xl p-4 text-sm focus:border-indigo-500 focus:bg-white outline-none transition-all">
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block ml-1">Type</label>
+                                <select id="type" class="w-full bg-slate-50 border-2 border-transparent rounded-2xl p-4 text-sm focus:border-indigo-500 focus:bg-white outline-none transition-all cursor-pointer">
+                                    <option value="expense">Expense</option>
+                                    <option value="income">Income</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block ml-1">Category</label>
+                            <select id="category" class="w-full bg-slate-50 border-2 border-transparent rounded-2xl p-4 text-sm focus:border-indigo-500 focus:bg-white outline-none transition-all cursor-pointer">
+                                <option value="Food">Food & Dining</option>
+                                <option value="Housing">Housing/Rent</option>
+                                <option value="Transport">Transport</option>
+                                <option value="Shopping">Shopping</option>
+                                <option value="Salary">Salary/Bonus</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold hover:bg-indigo-600 transition-all shadow-xl shadow-slate-100">
+                            Save Transaction
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Chart Area -->
+                <div class="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
+                    <h3 class="text-lg font-bold mb-6 flex items-center gap-2">
+                        <i data-lucide="pie-chart" class="text-indigo-600" size="20"></i> Spending Breakdown
+                    </h3>
+                    <div id="category-list" class="space-y-5">
+                        <!-- Dynamic categories go here -->
                     </div>
-                    <div className="flex items-center gap-6">
-                      <div className="text-right">
-                        <p className={`font-bold text-lg ${t.type === 'income' ? 'text-emerald-600' : 'text-rose-600'}`}>
-                          {t.type === 'income' ? '+' : '-'}{formatCurrency(t.amount)}
-                        </p>
-                        <p className="text-[10px] font-black uppercase text-slate-300 tracking-tighter">Verified</p>
-                      </div>
-                      <button 
-                        onClick={() => deleteTransaction(t.id)}
-                        className="opacity-0 group-hover:opacity-100 p-2 text-slate-300 hover:text-rose-600 transition-all"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
-                  </div>
-                )) : (
-                  <div className="flex flex-col items-center justify-center py-20 text-slate-400">
-                    <Filter size={40} className="mb-4 opacity-20" />
-                    <p className="font-medium italic text-center">No transactions to display.</p>
-                  </div>
-                )}
-              </div>
+                </div>
             </div>
-          </div>
+
+            <!-- Right: History -->
+            <div class="lg:col-span-2">
+                <div class="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm min-h-[650px]">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                        <h3 class="text-xl font-black">Transaction History</h3>
+                        <div class="flex items-center gap-1 bg-slate-50 p-1.5 rounded-2xl">
+                            <button onclick="setFilter('All')" class="filter-btn active px-4 py-2 text-xs font-bold rounded-xl transition-all bg-white shadow-sm text-indigo-600" data-filter="All">All</button>
+                            <button onclick="setFilter('income')" class="filter-btn px-4 py-2 text-xs font-bold rounded-xl transition-all text-slate-400 hover:text-slate-600" data-filter="income">Income</button>
+                            <button onclick="setFilter('expense')" class="filter-btn px-4 py-2 text-xs font-bold rounded-xl transition-all text-slate-400 hover:text-slate-600" data-filter="expense">Expense</button>
+                        </div>
+                    </div>
+
+                    <div id="transactions-container" class="space-y-4">
+                        <!-- Transactions go here -->
+                    </div>
+                </div>
+            </div>
         </div>
 
-        {/* Footer info for project presentation */}
-        <footer className="mt-12 pt-8 border-t border-slate-200 flex flex-col md:flex-row justify-between items-center text-slate-400 text-xs gap-4">
-          <div className="flex items-center gap-4">
-            <span className="flex items-center gap-1"><ArrowUpRight size={14} className="text-emerald-500" /> Income auditing</span>
-            <span className="flex items-center gap-1"><ArrowDownLeft size={14} className="text-rose-500" /> Expense tracking</span>
-          </div>
-          <p className="font-bold uppercase tracking-widest">&copy; 2024 SpendWise — Developed by S. Gowtham Raj</p>
+        <footer class="mt-16 pt-8 border-t border-slate-200 flex flex-col md:flex-row justify-between items-center text-slate-400 text-xs gap-6 mb-10">
+            <div class="flex items-center gap-6">
+                <span class="flex items-center gap-2 font-bold uppercase tracking-widest"><i data-lucide="arrow-up-right" size="14" class="text-emerald-500"></i> Income Auditing</span>
+                <span class="flex items-center gap-2 font-bold uppercase tracking-widest"><i data-lucide="arrow-down-left" size="14" class="text-rose-500"></i> Expense Tracking</span>
+            </div>
+            <p class="font-bold uppercase tracking-widest text-center">&copy; 2024 SpendWise — Developed by S. Gowtham Raj</p>
         </footer>
-      </div>
     </div>
-  );
-};
 
-export default App;
+    <script>
+        // 1. Initial State & Data Management
+        let transactions = JSON.parse(localStorage.getItem('transactions')) || [
+            { id: 1, text: 'Monthly Salary', amount: 75000, type: 'income', category: 'Salary', date: '2024-03-01' },
+            { id: 2, text: 'Grocery Shopping', amount: 4500, type: 'expense', category: 'Food', date: '2024-03-05' },
+            { id: 3, text: 'Rent Payment', amount: 18000, type: 'expense', category: 'Housing', date: '2024-03-01' }
+        ];
+
+        let currentFilter = 'All';
+
+        // 2. Formatting Helpers
+        const formatCurrency = (num) => {
+            return new Intl.NumberFormat('en-IN', {
+                style: 'currency',
+                currency: 'INR',
+                maximumFractionDigits: 0
+            }).format(num);
+        };
+
+        const getIconName = (category) => {
+            const icons = {
+                'Food': 'utensils',
+                'Housing': 'home',
+                'Transport': 'car',
+                'Shopping': 'shopping-bag',
+                'Salary': 'briefcase'
+            };
+            return icons[category] || 'credit-card';
+        };
+
+        // 3. UI Rendering Logic
+        const render = () => {
+            // Update Date
+            document.getElementById('current-date').innerText = new Date().toLocaleDateString('en-IN', { month: 'long', day: 'numeric', year: 'numeric' });
+
+            // Calculate Totals
+            const totals = transactions.reduce((acc, t) => {
+                if (t.type === 'income') {
+                    acc.income += t.amount;
+                    acc.balance += t.amount;
+                } else {
+                    acc.expense += t.amount;
+                    acc.balance -= t.amount;
+                }
+                return acc;
+            }, { balance: 0, income: 0, expense: 0 });
+
+            // Update Summary Cards
+            document.getElementById('total-balance').innerText = formatCurrency(totals.balance);
+            document.getElementById('total-income').innerText = `+${formatCurrency(totals.income)}`;
+            document.getElementById('total-expense').innerText = `-${formatCurrency(totals.expense)}`;
+
+            // Render Category Breakdown
+            const expenseOnly = transactions.filter(t => t.type === 'expense');
+            const catMap = {};
+            expenseOnly.forEach(t => {
+                catMap[t.category] = (catMap[t.category] || 0) + t.amount;
+            });
+
+            const catList = document.getElementById('category-list');
+            catList.innerHTML = '';
+            
+            Object.keys(catMap).forEach(cat => {
+                const percentage = Math.min(100, (catMap[cat] / totals.expense) * 100);
+                catList.innerHTML += `
+                    <div>
+                        <div class="flex justify-between text-[11px] font-extrabold uppercase tracking-widest mb-2">
+                            <span class="text-slate-500">${cat}</span>
+                            <span class="text-slate-900">${formatCurrency(catMap[cat])}</span>
+                        </div>
+                        <div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                            <div class="h-full bg-indigo-500 rounded-full transition-all duration-1000" style="width: ${percentage}%"></div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            if (Object.keys(catMap).length === 0) {
+                catList.innerHTML = '<p class="text-slate-400 text-sm italic py-4 text-center">No expense recorded</p>';
+            }
+
+            // Render Transactions History
+            const container = document.getElementById('transactions-container');
+            const filtered = transactions.filter(t => currentFilter === 'All' ? true : t.type === currentFilter);
+            
+            container.innerHTML = '';
+            
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="flex flex-col items-center justify-center py-20 text-slate-300">
+                        <i data-lucide="filter" size="48" class="mb-4 opacity-20"></i>
+                        <p class="font-bold uppercase tracking-widest text-[10px]">No matches found</p>
+                    </div>
+                `;
+            } else {
+                filtered.forEach(t => {
+                    const isInc = t.type === 'income';
+                    container.innerHTML += `
+                        <div class="group flex items-center justify-between p-5 bg-slate-50/50 hover:bg-white hover:shadow-xl hover:shadow-slate-200/50 border border-transparent hover:border-slate-100 rounded-3xl transition-all">
+                            <div class="flex items-center gap-5">
+                                <div class="w-12 h-12 rounded-2xl flex items-center justify-center ${isInc ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}">
+                                    <i data-lucide="${getIconName(t.category)}" size="20"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-slate-800 text-sm">${t.text}</h4>
+                                    <div class="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-[0.1em] mt-1">
+                                        <span>${t.date}</span>
+                                        <span class="text-slate-200">•</span>
+                                        <span class="px-1.5 py-0.5 bg-slate-100 rounded text-[9px]">${t.category}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-6">
+                                <div class="text-right">
+                                    <p class="font-black text-lg ${isInc ? 'text-emerald-600' : 'text-rose-600'}">
+                                        ${isInc ? '+' : '-'}${formatCurrency(t.amount)}
+                                    </p>
+                                    <p class="text-[9px] font-black uppercase text-slate-300 tracking-widest">Verified</p>
+                                </div>
+                                <button onclick="deleteTransaction(${t.id})" class="opacity-0 group-hover:opacity-100 p-2 text-slate-300 hover:text-rose-600 transition-all">
+                                    <i data-lucide="trash-2" size="18"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            // Re-initialize Lucide Icons
+            lucide.createIcons();
+            
+            // Sync with LocalStorage
+            localStorage.setItem('transactions', JSON.stringify(transactions));
+        };
+
+        // 4. Interaction Handlers
+        document.getElementById('transaction-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const desc = document.getElementById('desc').value;
+            const amount = parseFloat(document.getElementById('amount').value);
+            const type = document.getElementById('type').value;
+            const category = document.getElementById('category').value;
+
+            if (desc && amount) {
+                transactions.unshift({
+                    id: Date.now(),
+                    text: desc,
+                    amount: amount,
+                    type: type,
+                    category: category,
+                    date: new Date().toISOString().split('T')[0]
+                });
+                
+                e.target.reset();
+                render();
+            }
+        });
+
+        const deleteTransaction = (id) => {
+            transactions = transactions.filter(t => t.id !== id);
+            render();
+        };
+
+        const setFilter = (filter) => {
+            currentFilter = filter;
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                if (btn.dataset.filter === filter) {
+                    btn.classList.add('active', 'bg-white', 'shadow-sm', 'text-indigo-600');
+                    btn.classList.remove('text-slate-400');
+                } else {
+                    btn.classList.remove('active', 'bg-white', 'shadow-sm', 'text-indigo-600');
+                    btn.classList.add('text-slate-400');
+                }
+            });
+            render();
+        };
+
+        // Initial Start
+        window.onload = () => {
+            render();
+        };
+    </script>
+</body>
+</html>
